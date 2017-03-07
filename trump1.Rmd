@@ -1,0 +1,562 @@
+---
+title: "Analyse textuelle des tweets de Donald Trump"
+author: "Jonathan DAHAN"
+output:
+  revealjs::revealjs_presentation:
+    theme: default
+    highlight: pygments
+    center: true
+    css: custom.css
+
+---   
+
+## Introduction   
+
+<br>   
+
+- Journalistes + Donald Trump = Love Story   
+- Data: quel genre d'histoire ?
+- Analyse effectuée avec R    
+- Slides: http://rpubs.com/JDAHAN/trump_analyse   
+- [Todd Vaziri](Todd Vaziri), [David Robinson](https://twitter.com/drob), [Julia Silge](https://twitter.com/juliasilge)
+
+
+## Extraction des tweets   
+
+<br>   
+
+```{r echo=TRUE,cache=TRUE,eval=FALSE}
+lapply(c("twitteR","dplyr","purrr"),require,character.only=T)
+
+options(httr_oauth_cache=T)
+setup_twitter_oauth(
+  consumer_key="some_special_key",
+  consumer_secret="what_a_secret",
+  access_token="access_here",
+  access_secret="the_secret"
+)
+tweets<-userTimeline("realDonaldTrump", 
+                     n = 3200)
+tweets_df<-tbl_df(map_df(tweets, 
+                         as.data.frame))
+```   
+
+```{r echo=F,eval=TRUE,message=FALSE,cache=T}   
+load("C:/Users/dahan/Desktop/meetup_trump_analysis/tweets_df")
+
+```  
+
+## On obtient quoi ?   
+
+<br>   
+
+```{r,eval=T,echo=F,fig.align="center",fig.height=10,fig.width=10,results="asis",comment=NA}
+
+library(pander)
+mydata<-tweets_df[245,c("text","created","statusSource",
+                        "favoriteCount","retweetCount",
+                        "longitude","latitude","id")]
+
+row.names(mydata)<-NULL
+
+pandoc.table(mydata,emphasize.rownames=F,style="rmarkdown",table.continues="table",
+             split.tables=200)
+
+```   
+## Activité   
+
+```{r echo=F,eval=T,message=F,warning=F,include=T,fig.width=10}
+
+library(ggplot2)
+ggplot(data = tweets_df, aes(x = created)) +
+  geom_histogram(aes(fill = ..count..)) +
+  theme(legend.position = "none",
+        axis.title = element_text(size=16,colour = "#2c3e50",face="bold"),
+        axis.text.x=element_text(face="bold",size=16,colour = "#2c3e50",
+                                 hjust =1, 
+                                 vjust = 0.5,
+                                 margin=margin(10,0,15,0)),
+        axis.text.y=element_text(margin=margin(0,0,0,10)),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank()
+        ) +
+  ylab("Nombre de tweets") + 
+  xlab("")+
+  scale_fill_gradient(low = "midnightblue", high = "aquamarine4")
+```   
+
+## À quelle heure ?   
+
+
+```{r echo=F,eval=T,message=F,warning=F,include=T,fig.width=10,cache=T}
+library(scales)
+library(lubridate)
+
+tweets_df$created <- with_tz(tweets_df$created, tzone = "America/New_York")
+
+tweets_df$timeonly <- as.numeric(tweets_df$created - trunc(tweets_df$created, "days"))
+tweets_df[(minute(tweets_df$created) == 0 & second(tweets_df$created) == 0),11] <- NA
+
+tweets_df$timeonly <- strftime(tweets_df$created, format="%H:%M:%S",usetz = T,tz = "America/New_York")
+tweets_df$timeonly<-as.POSIXct(tweets_df$timeonly,format="%H:%M:%S")
+
+ggplot(data = tweets_df, aes(x = timeonly)) +
+  geom_histogram(aes(fill = ..count..)) +
+  theme(legend.position = "none",
+        axis.title = element_text(size=15,colour = "#2c3e50",face="bold"),
+        axis.text.x=element_text(face="bold",size=18,colour = "#2c3e50",
+        hjust =1,
+        vjust = 0.5,
+        margin=margin(10,0,15,0)),
+        axis.text.y=element_text(margin=margin(0,0,0,10)),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank()
+        ) +
+  xlab("Heure (EST)") + ylab("Nombre de tweets") + 
+  scale_x_datetime(breaks = date_breaks("3 hours"), 
+                   labels = date_format("%H:00")) +
+  scale_fill_gradient(low = "midnightblue", high = "aquamarine4")
+```   
+
+## Tweets nocturnes ?   
+
+<br>   
+
+"Just tried watching Saturday Night Live - unwatchable! Totally biased, not funny and the Baldwin impersonation just can't get any worse"   
+
+
+
+## Popularité   
+
+<br>   
+
+- nombre moyen de retweets par tweet ?  
+- nombre moyen d'ajouts en favoris par tweet ?  
+    
+
+## Popularité   
+
+<br>   
+
+- RTs/tweet ~ 19400   
+- FVs/tweet ~ 73300
+   
+```{r echo=F, eval=F}   
+cat(paste0("Nombre moyen de retweets: ",trunc(mean(tweets_df$retweetCount))))   
+cat(paste0("Nombre moyen de mise en favoris: ",trunc(mean(tweets_df$favoriteCount))))
+```  
+
+## Top RTs/tweet   
+
+<br>   
+
+
+```{r,eval=T,echo=F,fig.align="center",fig.height=10,fig.width=10,results="asis"}   
+
+mydata<-tweets_df[which.max(tweets_df$retweetCount),c("text","favoriteCount",
+                      "created","statusSource","retweetCount")]  
+row.names(mydata)<-NULL
+pandoc.table(mydata,emphasize.rownames=F,style="rmarkdown",table.continues="table",
+             split.tables=200)
+```   
+
+
+## Top FV's/tweet   
+
+<br>   
+
+```{r,eval=T,echo=F,fig.align="center",fig.height=10,fig.width=10,results="asis"}   
+mydata<-tweets_df[which.max(tweets_df$favoriteCount),
+                c("text","favoriteCount","created","statusSource",
+                  "retweetCount")]  
+
+row.names(mydata)<-NULL
+pandoc.table(mydata,emphasize.rownames=F,style="rmarkdown",table.continues="table",
+             split.tables=200)
+```   
+
+
+
+## Trump, il poste quoi ?   
+```{r echo=F,eval=T,message=F,warning=F,include=T,fig.width=10,cache=T}
+library("tm")
+library("SnowballC")
+library("wordcloud")
+library("RColorBrewer")
+
+tweets_df$text<-iconv(enc2utf8(tweets_df$text),sub="byte")
+docs <- Corpus(VectorSource(tweets_df$text))
+toSpace <- content_transformer(function (x , pattern ) gsub(pattern, " ", x))
+docs <- tm_map(docs, toSpace, "/")
+docs <- tm_map(docs, toSpace, "@")
+docs <- tm_map(docs, toSpace, "\\|")
+docs <- tm_map(docs, toSpace, "https://t.co/[A-Za-z\\d]+|&amp;")
+
+docs <- tm_map(docs, content_transformer(tolower))
+docs <- tm_map(docs, removeNumbers)
+docs <- tm_map(docs, removeWords, stopwords("SMART"))
+docs <- tm_map(docs, removePunctuation)
+docs <- tm_map(docs, stripWhitespace)
+docs <- tm_map(docs, removeWords, c("https", "tco")) 
+docs <- tm_map(docs, removeWords, stopwords("SMART"))
+
+
+dtm <- TermDocumentMatrix(docs)
+m <- as.matrix(dtm)
+v <- sort(rowSums(m),decreasing=TRUE)
+d <- data.frame(word = names(v),freq=v)
+set.seed(1234)
+colfunc <- colorRampPalette(c("midnightblue", "aquamarine4"))
+wordcloud(words = d$word, freq = d$freq, min.freq = 10, 
+          scale=c(6,0.5), max.words=200, random.order=FALSE, 
+          use.r.layout=FALSE,colors=colfunc(25))
+```   
+
+## Mots vides   
+
+<br>   
+
+- "the", "she", "from", "about"   
+- français: "le", "il", "dans"   
+- pas de signification propre: inutile de les indexer   
+
+
+
+## Des hashtags ?   
+```{r echo=F,eval=T,message=F,warning=F,include=T,fig.width=10,cache=T}
+ggplot(tweets_df, aes(factor(grepl("#", tweets_df$text)))) +
+  geom_bar(fill="midnightblue") + 
+  theme(legend.position = "none",
+        axis.title = element_text(size=15,colour = "#2c3e50",face="bold"),
+        axis.text.x=element_text(face="bold",size=18,colour = "#2c3e50",
+                                 margin=margin(15,0,0,0)),
+        axis.text.y=element_text(margin=margin(0,0,0,10)),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank()) +
+  ylab("Nombre de tweets") + 
+  xlab("")+
+  scale_x_discrete(labels=c("Sans hashtags", "Hashtags"))+
+  scale_colour_manual(values=c("aquamarine4", "midnightblue"))
+
+```   
+
+## Combien de caractères ?   
+```{r echo=F,eval=T,message=F,warning=F,include=T,fig.width=10,cache=T}
+tweets_df$charsintweet <- sapply(tweets_df$text, function(x) nchar(x))
+tweets_df$charsintweet[tweets_df$charsintweet>140]<-140
+
+ggplot(data = tweets_df, aes(x = charsintweet)) +
+  geom_area(aes(y = ..count..), stat = "bin",fill="midnightblue") +
+  theme(legend.position = "none",
+        axis.title = element_text(size=15,colour = "#2c3e50",face="bold"),
+        axis.text.x=element_text(face="bold",size=18,colour = "#2c3e50",
+                                 margin=margin(10,0,15,0)),
+        axis.text.y=element_text(margin=margin(0,0,0,10)),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank()) +
+  xlab("Nombre de caractères") + ylab("Nombre de tweets") +
+scale_fill_gradient(low = "midnightblue", high = "aquamarine4")+
+  scale_x_continuous(breaks = seq(0,140,by=20))   
+```   
+
+
+
+
+## D'où sont postés les tweets ?   
+
+<br>   
+
+```{r,eval=T,echo=F,fig.align="center",fig.height=10,fig.width=10,results="asis"}   
+tweets_df$statusSource<-gsub("(<[^>]*>)?([^<]*)","\\2",tweets_df$statusSource)
+tweets_source<-data.frame(table(tweets_df$statusSource)/nrow(tweets_df)*100)
+names(tweets_source)<-c("Source","%")
+tweets_source[,1]<-c("Periscope","Twitter","Android","iPad","iPhone","Web Client")
+tweets_source<-tweets_source[order(tweets_source[,2],decreasing=T),]
+tweets_source[,2]<-round(tweets_source[,2],digits=1)
+row.names(tweets_source)<-NULL
+pandoc.table(tweets_source,emphasize.rownames=F,style="rmarkdown",table.continues="table",
+             split.tables=200,col.names=F,justify=c("left","center"))
+```   
+
+## Fil quotidien   
+
+
+```{r echo=F,eval=T,message=F,warning=F,include=T,fig.width=10,cache=T}
+library(tidyr)
+library(dplyr)
+library(tidytext)
+library(stringr)
+
+tweets_select<-tweets_df%>%
+  select(id,statusSource,text,created)%>%
+  extract(statusSource,"statusSource","Twitter for (.*)?")%>%
+  filter(statusSource %in% c("iPhone","Android"))   
+
+
+tweets_select %>%
+  count(statusSource, time = hour(with_tz(created, "EST"))) %>%
+  mutate(rate = n / sum(n)) %>%
+  ggplot(aes(time, rate, color = statusSource),size=3) +
+  geom_line(linetype=1,size=4) +
+  scale_color_manual(values = c("aquamarine4", "midnightblue"))+
+  theme(legend.position = "right",
+        axis.title = element_text(size=15,colour = "#2c3e50",face="bold"),
+        axis.text.x=element_text(face="bold",size=18,colour = "#2c3e50",
+                        margin=margin(10,0,15,10)),
+        axis.text.y = element_text(margin=margin(0,0,0,10)),
+        legend.text = element_text(size=18,face="bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank())+
+  scale_y_continuous(labels = percent_format()) +
+  labs(x = "Heure de la journée (EST)",
+       y = "% de tweets",
+       color = "")
+
+
+```  
+
+
+
+## Hypothèse   
+
+<br>   
+
+- iPhone = équipe de campagne, Android = Trump   
+- http://www.theverge.com/2015/10/5/9453935/donald-trump-twitter-strategy   
+- https://www.cnet.com/news/trumps-tweets-android-for-nasty-iphone-for-nice/   
+
+
+
+
+
+## Partage d'images/liens    
+```{r echo=F,eval=T,message=F,warning=F,include=T,fig.width=10,cache=T,comment=F}
+images <- tweets_select %>%
+  filter(!str_detect(text, '^"')) %>%
+  count(statusSource,
+        picture = ifelse(str_detect(text, "t.co"),
+                         "Image/Lien", "Pas d'image/lien"))
+
+ggplot(images, aes(statusSource, n, fill = picture)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "", y = "Nombre de tweets", fill = "")+
+  theme(legend.position = "right",
+        axis.title = element_text(size=15,colour = "#2c3e50",face="bold"),
+        legend.text = element_text(size=18,face="bold"),
+        axis.text.x=element_text(face="bold",size=18,colour = "#2c3e50",
+                                 margin=margin(15,0,0,0)),
+        axis.text.y=element_text(margin=margin(0,0,0,10)),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank())+
+  scale_fill_manual(values=c("aquamarine4", "midnightblue"))
+
+```   
+
+## iPhone Vs Android: contenus   
+
+<br>   
+
+- Utilisation du ratio log-odds   
+- "fake": + chances d'être posté par l'iPhone ou Android ?   
+- Comparer des proportions   
+
+## Ratio log-odds   
+
+<br>   
+
+$$\log_2(\frac{\frac{\mbox{nb Android} + 1}{\mbox{total Android} + 1}} {\frac{\mbox{nb iPhone} + 1}{\mbox{total iPhone} + 1}})$$   
+
+## log-odds: exemple   
+
+
+<br>   
+
+Android --> 3 fois / 10 000   
+iPhone --> 1 fois / 10 000   
+$$\text{log-odds}=\log_2(\frac{\frac{\mbox{4}}{\mbox{10001}}} {\frac{\mbox{2}}{\mbox{10001}}})$$
+$$log_2(2^{1})=1$$   
+
+
+## log-odds: iPhone Vs Android   
+
+
+
+```{r echo=F,eval=T,message=F,warning=F,include=T,fig.width=10,cache=T}
+library(tidytext)
+
+reg <- "([^A-Za-z\\d#@']|'(?![A-Za-z\\d#@]))"
+trump_words <- tweets_select %>%
+  filter(!str_detect(text, '^"')) %>%
+  mutate(text = str_replace_all(text, "https://t.co/[A-Za-z\\d]+|&amp;", "")) %>%
+  unnest_tokens(word, text, token = "regex", pattern = reg) %>%
+  filter(!word %in% stopwords("SMART"),
+         str_detect(word, "[a-z]"))
+
+log_odds <- trump_words %>%
+  count(word, statusSource) %>%
+  filter(sum(n) >= 10) %>%
+  spread(statusSource, n, fill = 0) %>%
+  ungroup() %>%
+  mutate_each(funs((. + 1) / sum(. + 1)), -word) %>%
+  mutate(logratio = log2(Android / iPhone)) %>%
+  arrange(desc(logratio))   
+
+log_odds %>%
+  group_by(logratio > 0) %>%
+  top_n(10, abs(logratio)) %>%
+  ungroup() %>%
+  mutate(word = reorder(word, logratio)) %>%
+  ggplot(aes(word, logratio, fill = logratio < 0)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  ylab("log ratio") +
+  xlab("")+
+  scale_fill_manual(name = "", labels = c("Android", "iPhone"),
+                    values = c("aquamarine4", "midnightblue"))+
+  theme(legend.position = "right",
+        axis.title = element_text(size=15,colour = "#2c3e50",face="bold"),
+        axis.text.x=element_text(face="bold",size=18,colour = "#2c3e50",
+                        margin=margin(10,0,15,10)),
+        axis.text.y = element_text(face="bold",size=18,margin=margin(0,0,0,10)),
+        legend.text = element_text(size=18,face="bold"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_rect(colour="#ecf0f1"))
+```   
+
+## Contenus   
+
+<br>   
+
+- iPhone: plus de hashtags   
+- iPhone: plus de mots pour des annonces ("7pm", "3pm", "join", "tickets")   
+- Android: plus de mots à charge émotionnelle négative ("fake", "illegal","badly", "failing")    
+
+
+## Tweets / iPhone   
+
+<br>   
+
+- Annonces, événements...
+- "Join me in Florida this Saturday at 5pm for a rally at the Orlando-Melbourne International Airport! "   
+
+   
+## Tweets / Android    
+
+<br>   
+
+- d'un autre type...   
+- "The FAKE NEWS media (failing @nytimes, @NBCNews, @ABC, @CBS, @CNN) is not my enemy, it is the enemy of the American People!"   
+
+
+
+## Sentiments   
+
+<br>   
+
+- NRC Word-Emotion Association Lexicon   
+- à chaque mot est associé le sentiment qu'il produit   
+- "trust", "fear","negative", "sadness", "anger", "surprise", "positive", "disgust", "joy", "anticipation"   
+
+## De quoi ça a l'air ?   
+
+<br>   
+  
+```{r,eval=T,echo=F,fig.align="center",fig.height=10,fig.width=10,results="asis",warning=F,message=F} 
+library(dplyr)
+library(lsa)
+library(tidytext)
+
+sentiments <- sentiments %>%
+  filter(lexicon == "nrc") %>%
+  dplyr::select(word, sentiment)
+mydata<-sentiments[c(4842,6450,6451,6452,4816,4814,4818),]
+pandoc.table(mydata,emphasize.rownames=F,style="rmarkdown",table.continues="table",
+             split.tables=200)
+
+```   
+
+
+## L'heure du bilan   
+
+<br>
+
+```{r,eval=T,echo=F,fig.align="center",fig.height=10,fig.width=10,results="asis",warning=F,message=F} 
+library(tidyr)
+sources <- trump_words %>%
+  group_by(statusSource) %>%
+  mutate(total_words = n()) %>%
+  ungroup() %>%
+  distinct(id, statusSource, total_words)
+
+sentiment_iph_and <- trump_words %>%
+  inner_join(sentiments, by = "word") %>%
+  count(sentiment, id) %>%
+  ungroup() %>%
+  complete(sentiment, id, fill = list(n = 0)) %>%
+  inner_join(sources) %>%
+  group_by(statusSource, sentiment, total_words) %>%
+  summarize(words = sum(n)) %>%
+  ungroup()   
+
+mydata<-data.frame(
+  
+  "Source"=rep(c("Android","iPhone"),1),
+  "Sentiments"=c(rep(paste0("negative, ","anger, ","disgust, ","fear, ","sadness"),2)),
+  
+  "Taux (%)"=c(
+    round(100*sum(sentiment_iph_and$words[sentiment_iph_and$sentiment%in%c("negative","anger","disgust",
+                                   "fear","sadness")&sentiment_iph_and$statusSource=="Android"])/unique(sentiment_iph_and$total_words)[1],1),
+    
+    
+    round(100*sum(sentiment_iph_and$words[sentiment_iph_and$sentiment%in%c("negative","anger","disgust",
+                                   "fear","sadness")&
+                                     sentiment_iph_and$statusSource=="iPhone"])/unique(sentiment_iph_and$total_words)[2],1)
+    
+    
+  )
+)
+
+names(mydata)<-c("Source","Sentiments","%")
+pandoc.table(mydata,emphasize.rownames=F,style="rmarkdown",table.continues="table",
+             split.tables=200)
+```   
+
+## Sentiments: et Mélenchon ?   
+
+<br>
+
+http://www.lirmm.fr/~abdaoui/publications/FEEL.pdf   
+
+<br>   
+
+```{r,eval=T,echo=F,fig.align="center",fig.height=10,fig.width=10,results="asis",warning=F,message=F}
+library(stringr)
+load("C:/Users/dahan/Desktop/meetup_trump_analysis/french_lexic.RData")
+load("C:/Users/dahan/Desktop/meetup_trump_analysis/melenchon_tweets_df.RData")
+
+reg <- "([^A-Za-z\\d#@']|'(?![A-Za-z\\d#@]))"
+melenchon_words <- melenchon_tweets_df %>%
+  filter(!str_detect(text, '^"')) %>%
+  mutate(text = str_replace_all(text, "https://t.co/[A-Za-z\\d]+|&amp;", "")) %>%
+  unnest_tokens(word, text, token = "regex", pattern = reg) %>%
+  filter(!word %in% stopwords_fr,
+         str_detect(word, "[a-z]"))
+
+sentiment_melenchon<-merge(melenchon_words,french_lexic,by.x="word",
+                           all.x=T,all.y=T) 
+mydata<-round(100*table(sentiment_melenchon$polarity)/nrow(sentiment_melenchon),1)
+mydata<-paste0(mydata," %")
+mydata<-data.frame("-"=mydata[1],"+"=mydata[2])
+names(mydata)<-c("-","+")
+
+pandoc.table(mydata,emphasize.rownames=F,style="rmarkdown",table.continues="table",
+             split.tables=200)
+```   
