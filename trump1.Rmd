@@ -16,7 +16,7 @@ output:
 
 - Journalistes + Donald Trump = Love Story   
 - Data: quel genre d'histoire ?
-- Analyse effectuée avec R    
+- Analyse effectuÃ©e avec R    
 - Slides: http://rpubs.com/JDAHAN/trump_analyse   
 - [Todd Vaziri](Todd Vaziri), [David Robinson](https://twitter.com/drob), [Julia Silge](https://twitter.com/juliasilge)
 
@@ -29,7 +29,7 @@ output:
 lapply(c("twitteR","dplyr","purrr"),require,character.only=T)
 
 options(httr_oauth_cache=T)
-setup_twitter_oauth(
+setup_twitter_oauth( #Vos tokens/keys ici
   consumer_key="some_special_key",
   consumer_secret="what_a_secret",
   access_token="access_here",
@@ -63,7 +63,7 @@ pandoc.table(mydata,emphasize.rownames=F,style="rmarkdown",table.continues="tabl
              split.tables=200)
 
 ```   
-## Activité   
+## ActivitÃ©   
 
 ```{r echo=F,eval=T,message=F,warning=F,include=T,fig.width=10}
 
@@ -86,7 +86,7 @@ ggplot(data = tweets_df, aes(x = created)) +
   scale_fill_gradient(low = "midnightblue", high = "aquamarine4")
 ```   
 
-## À quelle heure ?   
+## Ã€ quelle heure ?   
 
 
 ```{r echo=F,eval=T,message=F,warning=F,include=T,fig.width=10,cache=T}
@@ -128,7 +128,7 @@ ggplot(data = tweets_df, aes(x = timeonly)) +
 
 
 
-## Popularité   
+## PopularitÃ©   
 
 <br>   
 
@@ -136,7 +136,7 @@ ggplot(data = tweets_df, aes(x = timeonly)) +
 - nombre moyen d'ajouts en favoris par tweet ?  
     
 
-## Popularité   
+## PopularitÃ©   
 
 <br>   
 
@@ -219,7 +219,7 @@ wordcloud(words = d$word, freq = d$freq, min.freq = 10,
 <br>   
 
 - "the", "she", "from", "about"   
-- français: "le", "il", "dans"   
+- franÃ§ais: "le", "il", "dans"   
 - pas de signification propre: inutile de les indexer   
 
 
@@ -243,7 +243,7 @@ ggplot(tweets_df, aes(factor(grepl("#", tweets_df$text)))) +
 
 ```   
 
-## Combien de caractères ?   
+## Combien de caractÃ¨res ?   
 ```{r echo=F,eval=T,message=F,warning=F,include=T,fig.width=10,cache=T}
 tweets_df$charsintweet <- sapply(tweets_df$text, function(x) nchar(x))
 tweets_df$charsintweet[tweets_df$charsintweet>140]<-140
@@ -258,7 +258,7 @@ ggplot(data = tweets_df, aes(x = charsintweet)) +
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         panel.border = element_blank()) +
-  xlab("Nombre de caractères") + ylab("Nombre de tweets") +
+  xlab("Nombre de caractÃ¨res") + ylab("Nombre de tweets") +
 scale_fill_gradient(low = "midnightblue", high = "aquamarine4")+
   scale_x_continuous(breaks = seq(0,140,by=20))   
 ```   
@@ -266,7 +266,7 @@ scale_fill_gradient(low = "midnightblue", high = "aquamarine4")+
 
 
 
-## D'où sont postés les tweets ?   
+## D'oÃ¹ sont postÃ©s les tweets ?   
 
 <br>   
 
@@ -313,7 +313,7 @@ tweets_select %>%
         panel.grid.minor = element_blank(),
         panel.border = element_blank())+
   scale_y_continuous(labels = percent_format()) +
-  labs(x = "Heure de la journée (EST)",
+  labs(x = "Heure de la journÃ©e (EST)",
        y = "% de tweets",
        color = "")
 
@@ -322,11 +322,11 @@ tweets_select %>%
 
 
 
-## Hypothèse   
+## HypothÃ¨se   
 
 <br>   
 
-- iPhone = équipe de campagne, Android = Trump   
+- iPhone = Ã©quipe de campagne, Android = Trump   
 - http://www.theverge.com/2015/10/5/9453935/donald-trump-twitter-strategy   
 - https://www.cnet.com/news/trumps-tweets-android-for-nasty-iphone-for-nice/   
 
@@ -363,7 +363,7 @@ ggplot(images, aes(statusSource, n, fill = picture)) +
 <br>   
 
 - Utilisation du ratio log-odds   
-- "fake": + chances d'être posté par l'iPhone ou Android ?   
+- "fake": + chances d'Ãªtre postÃ© par l'iPhone ou Android ?   
 - Comparer des proportions   
 
 ## Ratio log-odds   
@@ -437,14 +437,14 @@ log_odds %>%
 
 - iPhone: plus de hashtags   
 - iPhone: plus de mots pour des annonces ("7pm", "3pm", "join", "tickets")   
-- Android: plus de mots à charge émotionnelle négative ("fake", "illegal","badly", "failing")    
+- Android: plus de mots Ã  charge Ã©motionnelle nÃ©gative ("fake", "illegal","badly", "failing")    
 
 
 ## Tweets / iPhone   
 
 <br>   
 
-- Annonces, événements...
+- Annonces, Ã©vÃ©nements...
 - "Join me in Florida this Saturday at 5pm for a rally at the Orlando-Melbourne International Airport! "   
 
    
@@ -462,10 +462,10 @@ log_odds %>%
 <br>   
 
 - NRC Word-Emotion Association Lexicon   
-- à chaque mot est associé le sentiment qu'il produit   
+- Ã  chaque mot est associÃ© le sentiment qu'il produit   
 - "trust", "fear","negative", "sadness", "anger", "surprise", "positive", "disgust", "joy", "anticipation"   
 
-## De quoi ça a l'air ?   
+## De quoi Ã§a a l'air ?   
 
 <br>   
   
@@ -529,7 +529,7 @@ pandoc.table(mydata,emphasize.rownames=F,style="rmarkdown",table.continues="tabl
              split.tables=200)
 ```   
 
-## Sentiments: et Mélenchon ?   
+## Sentiments: et MÃ©lenchon ?   
 
 <br>
 
